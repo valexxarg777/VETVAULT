@@ -1,6 +1,7 @@
 "use client"
 
-import { Building2, User, Bell, Shield, Database, Palette } from "lucide-react"
+import { useState } from "react"
+import { Building2, User, Bell, Shield, Database, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 
 const settingsSections = [
   {
@@ -28,6 +29,38 @@ const settingsSections = [
 ]
 
 export function SettingsContent() {
+  const [showDbModal, setShowDbModal] = useState(false)
+  const [dbConfig, setDbConfig] = useState({
+    host: "",
+    database: "",
+    user: "",
+    password: "",
+  })
+  const [connectionStatus, setConnectionStatus] = useState<"idle" | "testing" | "success" | "error">("idle")
+  const [statusMessage, setStatusMessage] = useState("")
+
+  const handleTestConnection = async () => {
+    setConnectionStatus("testing")
+    setStatusMessage("Probando conexion...")
+    
+    // Simular prueba de conexion
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    
+    if (dbConfig.host && dbConfig.database && dbConfig.user && dbConfig.password) {
+      setConnectionStatus("success")
+      setStatusMessage("Conexion exitosa! La base de datos esta accesible.")
+    } else {
+      setConnectionStatus("error")
+      setStatusMessage("Error: Por favor completa todos los campos de configuracion.")
+    }
+  }
+
+  const handleSaveConnection = () => {
+    // Aqui se guardaria la configuracion
+    alert("Para guardar la configuracion de SQL Server, agrega las variables de entorno en v0:\n\n1. Haz clic en el icono de configuracion (engranaje) arriba a la derecha\n2. Selecciona 'Vars'\n3. Agrega:\n   - MSSQL_HOST: " + dbConfig.host + "\n   - MSSQL_DATABASE: " + dbConfig.database + "\n   - MSSQL_USER: " + dbConfig.user + "\n   - MSSQL_PASSWORD: [tu contrasena]")
+    setShowDbModal(false)
+  }
+
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Settings Sections */}
@@ -100,7 +133,9 @@ export function SettingsContent() {
           <p className="text-sm text-[var(--muted-foreground)] mb-4">
             Gestiona la conexion a tu base de datos SQL Server.
           </p>
-          <button className="w-full px-4 py-2 rounded-lg bg-[var(--secondary)] text-[var(--foreground)] font-medium hover:bg-[var(--muted)] transition-colors">
+          <button 
+            onClick={() => setShowDbModal(true)}
+            className="w-full px-4 py-2 rounded-lg bg-[var(--secondary)] text-[var(--foreground)] font-medium hover:bg-[var(--muted)] transition-colors">
             Configurar Conexion
           </button>
         </div>
@@ -127,6 +162,126 @@ export function SettingsContent() {
           Guardar Cambios
         </button>
       </div>
+
+      {/* Database Connection Modal */}
+      {showDbModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-[var(--card)] border border-[var(--border)] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-[color-mix(in_srgb,var(--info)_20%,transparent)]">
+                  <Database className="w-5 h-5 text-[var(--info)]" />
+                </div>
+                <h2 className="text-lg font-semibold text-[var(--foreground)]">Configurar SQL Server</h2>
+              </div>
+              <button 
+                onClick={() => {
+                  setShowDbModal(false)
+                  setConnectionStatus("idle")
+                  setStatusMessage("")
+                }}
+                className="p-2 rounded-lg hover:bg-[var(--secondary)] transition-colors"
+              >
+                <X className="w-5 h-5 text-[var(--muted-foreground)]" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[var(--muted-foreground)] mb-2">
+                  Servidor / Host
+                </label>
+                <input
+                  type="text"
+                  placeholder="localhost o tu-servidor.database.windows.net"
+                  value={dbConfig.host}
+                  onChange={(e) => setDbConfig({...dbConfig, host: e.target.value})}
+                  className="w-full px-4 py-2.5 rounded-lg bg-[var(--secondary)] border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--muted-foreground)] mb-2">
+                  Nombre de la Base de Datos
+                </label>
+                <input
+                  type="text"
+                  placeholder="vetvault_db"
+                  value={dbConfig.database}
+                  onChange={(e) => setDbConfig({...dbConfig, database: e.target.value})}
+                  className="w-full px-4 py-2.5 rounded-lg bg-[var(--secondary)] border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--muted-foreground)] mb-2">
+                  Usuario
+                </label>
+                <input
+                  type="text"
+                  placeholder="sa o tu_usuario"
+                  value={dbConfig.user}
+                  onChange={(e) => setDbConfig({...dbConfig, user: e.target.value})}
+                  className="w-full px-4 py-2.5 rounded-lg bg-[var(--secondary)] border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[var(--muted-foreground)] mb-2">
+                  Contrasena
+                </label>
+                <input
+                  type="password"
+                  placeholder="Tu contrasena de SQL Server"
+                  value={dbConfig.password}
+                  onChange={(e) => setDbConfig({...dbConfig, password: e.target.value})}
+                  className="w-full px-4 py-2.5 rounded-lg bg-[var(--secondary)] border border-[var(--border)] text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all"
+                />
+              </div>
+
+              {/* Connection Status */}
+              {connectionStatus !== "idle" && (
+                <div className={`flex items-center gap-2 p-3 rounded-lg ${
+                  connectionStatus === "testing" ? "bg-[var(--info)]/10 text-[var(--info)]" :
+                  connectionStatus === "success" ? "bg-[var(--primary)]/10 text-[var(--primary)]" :
+                  "bg-[var(--destructive)]/10 text-[var(--destructive)]"
+                }`}>
+                  {connectionStatus === "testing" && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {connectionStatus === "success" && <CheckCircle className="w-4 h-4" />}
+                  {connectionStatus === "error" && <AlertCircle className="w-4 h-4" />}
+                  <span className="text-sm">{statusMessage}</span>
+                </div>
+              )}
+
+              <div className="p-3 rounded-lg bg-[var(--warning)]/10 border border-[var(--warning)]/20">
+                <p className="text-sm text-[var(--warning)]">
+                  <strong>Nota:</strong> Si tu SQL Server esta en localhost, deberas exponerlo a internet o usar una base de datos en la nube para que funcione en produccion.
+                </p>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex gap-3 px-6 py-4 border-t border-[var(--border)] bg-[var(--secondary)]/30">
+              <button
+                onClick={handleTestConnection}
+                disabled={connectionStatus === "testing"}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-[var(--secondary)] text-[var(--foreground)] font-medium hover:bg-[var(--muted)] transition-colors disabled:opacity-50"
+              >
+                {connectionStatus === "testing" ? "Probando..." : "Probar Conexion"}
+              </button>
+              <button
+                onClick={handleSaveConnection}
+                disabled={connectionStatus !== "success"}
+                className="flex-1 px-4 py-2.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
